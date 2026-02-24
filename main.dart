@@ -152,12 +152,10 @@ class SessionManager extends ChangeNotifier {
       List<ModbusElement> elements = [];
       if (type == "Holding Registers") {
         for (int i = 0; i < count; i++) {
-          // REQUIRES 'type' parameter
           elements.add(ModbusUint16Register(name: "R${address + i}", type: ModbusElementType.holdingRegister, address: address + i));
         }
       } else if (type == "Coils") {
         for (int i = 0; i < count; i++) {
-          // DOES NOT require 'type' parameter
           elements.add(ModbusCoil(name: "C${address + i}", address: address + i));
         }
       } else {
@@ -191,11 +189,9 @@ class SessionManager extends ChangeNotifier {
       if (!session.isConnected) break;
       try {
         if (entry.writeType == "Holding Register") {
-          // REQUIRES 'type' parameter
           var reg = ModbusUint16Register(name: entry.label, type: ModbusElementType.holdingRegister, address: entry.address);
           await session.client!.send(reg.getWriteRequest(entry.values[0]));
         } else if (entry.writeType == "Coil") {
-          // DOES NOT require 'type' parameter
           var coil = ModbusCoil(name: entry.label, address: entry.address);
           await session.client!.send(coil.getWriteRequest(entry.values[0] != 0));
         }
@@ -227,7 +223,7 @@ class SessionManager extends ChangeNotifier {
 
   void _startReadPolling(ModbusSession session, int address, int count, int unitId, String type) {
     if (!session.isConnected) return;
-    double safeInterval = session.readInterval < 0.1 ? 0.1 : session.readInterval; // 0.1s minimum
+    double safeInterval = session.readInterval < 0.1 ? 0.1 : session.readInterval; 
     session.isReadPolling = true;
     _sessionLog(session, "Read polling started (${safeInterval}s).", "info");
     
@@ -275,7 +271,7 @@ class ModbusMobileApp extends StatelessWidget {
       title: 'Modbus Multi-Session',
       theme: ThemeData.dark().copyWith(
         primaryColor: const Color(0xFFE8A020),
-        scaffoldBackgroundColor: const Color(0xFF0B0E0D), // Matches BG_DEEP
+        scaffoldBackgroundColor: const Color(0xFF0B0E0D), 
         appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF131816)),
       ),
       home: const DashboardScreen(),
@@ -286,6 +282,63 @@ class ModbusMobileApp extends StatelessWidget {
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key}); 
 
+  Future<void> _showAddConnectionDialog(BuildContext context, SessionManager manager) async {
+    final TextEditingController labelController = TextEditingController(text: "New PLC");
+    final TextEditingController hostController = TextEditingController();
+    final TextEditingController portController = TextEditingController(text: "502");
+
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF191E1C),
+          title: const Text('Add Connection', style: TextStyle(color: Color(0xFFE8A020))),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: labelController, decoration: const InputDecoration(labelText: 'Label')),
+                TextField(controller: hostController, decoration: const InputDecoration(labelText: 'Host / IP')),
+                TextField(
+                  controller: portController, 
+                  decoration: const InputDecoration(labelText: 'Port'), 
+                  keyboardType: TextInputType.number
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE8A020), 
+                foregroundColor: const Color(0xFF0B0E0D)
+              ),
+              onPressed: () {
+                final String label = labelController.text.trim();
+                final String host = hostController.text.trim();
+                final int port = int.tryParse(portController.text.trim()) ?? 502;
+                
+                if (host.isNotEmpty) {
+                  manager.addSession(ModbusSession(
+                    label: label.isEmpty ? "New PLC" : label, 
+                    host: host, 
+                    port: port
+                  ));
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      }
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final manager = context.watch<SessionManager>();
@@ -294,7 +347,10 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Modbus ICS Client', style: TextStyle(color: Color(0xFFE8A020))),
         actions: [
-          IconButton(icon: const Icon(Icons.add), onPressed: () => manager.addSession(ModbusSession())),
+          IconButton(
+            icon: const Icon(Icons.add), 
+            onPressed: () => _showAddConnectionDialog(context, manager)
+          ),
         ],
       ),
       body: Column(
