@@ -1,0 +1,26 @@
+name: modbus_ng_mobile
+description: A mobile Modbus TCP Client ported from Modbus-NG.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State management for multi-session handling
+  provider: ^6.1.5
+  
+  # Core Modbus protocol formatting (Updated to modern versions)
+  modbus_client: ^1.4.4
+  modbus_client_tcp: ^1.2.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
