@@ -97,7 +97,7 @@ class SessionManager extends ChangeNotifier {
   void _sessionLog(ModbusSession session, String message, String tag) {
     final entry = LogEntry(timestamp: DateTime.now(), message: message, tag: tag, source: session.label);
     session.logs.add(entry);
-    if (session.logs.length > 500) session.logs.removeAt(0); // Max 500 limit
+    if (session.logs.length > 500) session.logs.removeAt(0); 
     _globalLog(message, tag, source: session.label);
     notifyListeners();
   }
@@ -136,7 +136,6 @@ class SessionManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Core Read function using the ModbusElementsGroup API
   Future<void> executeRead(ModbusSession session, int address, int count, int unitId, String type) async {
     if (!session.isConnected) {
       _sessionLog(session, "Cannot read: Not connected.", "error");
@@ -145,7 +144,6 @@ class SessionManager extends ChangeNotifier {
     try {
       bool isBit = type == "Coils" || type == "Discrete Inputs";
       
-      // Request limit checks
       if (isBit && count > 2000) throw Exception("Max 2000 coils per request");
       if (!isBit && count > 125) throw Exception("Max 125 registers per request");
 
@@ -179,7 +177,6 @@ class SessionManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Multi-Address Write Loop using the ModbusElement API
   Future<void> executeMultiWrite(ModbusSession session, int unitId) async {
     if (!session.isConnected) return;
     int okCount = 0;
@@ -205,7 +202,6 @@ class SessionManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Helper methods to securely update the UI from the outside
   void addWriteEntry(ModbusSession session, WriteEntry entry) {
     session.writeEntries.add(entry);
     notifyListeners();
@@ -216,7 +212,6 @@ class SessionManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Polling logic 
   void toggleReadPolling(ModbusSession session, int address, int count, int unitId, String type) {
     session.isReadPolling ? _stopReadPolling(session) : _startReadPolling(session, address, count, unitId, type);
   }
@@ -268,11 +263,55 @@ class ModbusMobileApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Modbus Multi-Session',
+      title: 'Modbus Matrix Client',
       theme: ThemeData.dark().copyWith(
-        primaryColor: const Color(0xFFE8A020),
-        scaffoldBackgroundColor: const Color(0xFF0B0E0D), 
-        appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF131816)),
+        primaryColor: const Color(0xFF00FF41),
+        scaffoldBackgroundColor: Colors.black,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.black,
+          foregroundColor: Color(0xFF00FF41),
+          elevation: 0,
+          shape: Border(bottom: BorderSide(color: Color(0xFF008F11), width: 1)),
+        ),
+        textTheme: ThemeData.dark().textTheme.apply(
+          fontFamily: 'monospace',
+          bodyColor: const Color(0xFF00FF41),
+          displayColor: const Color(0xFF00FF41),
+        ),
+        cardTheme: const CardThemeData(
+          color: Colors.black,
+          shape: RoundedRectangleBorder(
+            side: BorderSide(color: Color(0xFF008F11), width: 1),
+            borderRadius: BorderRadius.zero,
+          ),
+          margin: EdgeInsets.all(4),
+        ),
+        inputDecorationTheme: const InputDecorationTheme(
+          labelStyle: TextStyle(color: Color(0xFF008F11)),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Color(0xFF008F11)),
+            borderRadius: BorderRadius.zero,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Color(0xFF00FF41), width: 2),
+            borderRadius: BorderRadius.zero,
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF003B00),
+            foregroundColor: const Color(0xFF00FF41),
+            shape: const RoundedRectangleBorder(
+              side: BorderSide(color: Color(0xFF00FF41)),
+              borderRadius: BorderRadius.zero,
+            ),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: const Color(0xFF00FF41),
+          ),
+        ),
       ),
       home: const DashboardScreen(),
     );
@@ -283,7 +322,7 @@ class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key}); 
 
   Future<void> _showAddConnectionDialog(BuildContext context, SessionManager manager) async {
-    final TextEditingController labelController = TextEditingController(text: "New PLC");
+    final TextEditingController labelController = TextEditingController(text: "New_Node");
     final TextEditingController hostController = TextEditingController();
     final TextEditingController portController = TextEditingController(text: "502");
 
@@ -291,18 +330,25 @@ class DashboardScreen extends StatelessWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF191E1C),
-          title: const Text('Add Connection', style: TextStyle(color: Color(0xFFE8A020))),
+          backgroundColor: Colors.black,
+          shape: const RoundedRectangleBorder(
+            side: BorderSide(color: Color(0xFF00FF41), width: 2),
+            borderRadius: BorderRadius.zero,
+          ),
+          title: const Text('INITIALIZE CONNECTION', style: TextStyle(color: Color(0xFF00FF41), fontFamily: 'monospace')),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: labelController, decoration: const InputDecoration(labelText: 'Label')),
-                TextField(controller: hostController, decoration: const InputDecoration(labelText: 'Host / IP')),
+                TextField(controller: labelController, decoration: const InputDecoration(labelText: 'Label'), style: const TextStyle(color: Color(0xFF00FF41))),
+                const SizedBox(height: 8),
+                TextField(controller: hostController, decoration: const InputDecoration(labelText: 'Host / IP'), style: const TextStyle(color: Color(0xFF00FF41))),
+                const SizedBox(height: 8),
                 TextField(
                   controller: portController, 
                   decoration: const InputDecoration(labelText: 'Port'), 
-                  keyboardType: TextInputType.number
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Color(0xFF00FF41)),
                 ),
               ],
             ),
@@ -310,13 +356,9 @@ class DashboardScreen extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+              child: const Text('ABORT', style: TextStyle(color: Color(0xFF008F11))),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE8A020), 
-                foregroundColor: const Color(0xFF0B0E0D)
-              ),
               onPressed: () {
                 final String label = labelController.text.trim();
                 final String host = hostController.text.trim();
@@ -324,14 +366,14 @@ class DashboardScreen extends StatelessWidget {
                 
                 if (host.isNotEmpty) {
                   manager.addSession(ModbusSession(
-                    label: label.isEmpty ? "New PLC" : label, 
+                    label: label.isEmpty ? "New_Node" : label, 
                     host: host, 
                     port: port
                   ));
                   Navigator.pop(context);
                 }
               },
-              child: const Text('Add'),
+              child: const Text('EXECUTE'),
             ),
           ],
         );
@@ -345,10 +387,10 @@ class DashboardScreen extends StatelessWidget {
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Modbus ICS Client', style: TextStyle(color: Color(0xFFE8A020))),
+        title: const Text('MODBUS_ICS_LINK', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add), 
+            icon: const Icon(Icons.add_box_outlined), 
             onPressed: () => _showAddConnectionDialog(context, manager)
           ),
         ],
@@ -362,10 +404,14 @@ class DashboardScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 final session = manager.sessions[index];
                 return Card(
-                  color: const Color(0xFF191E1C),
-                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   child: ListTile(
-                    leading: Icon(Icons.circle, color: session.isConnected ? const Color(0xFF3DDC84) : Colors.grey, size: 14),
+                    leading: Text(
+                      session.isConnected ? "[ON]" : "[OFF]", 
+                      style: TextStyle(
+                        color: session.isConnected ? const Color(0xFF00FF41) : const Color(0xFF008F11),
+                        fontWeight: FontWeight.bold
+                      )
+                    ),
                     title: Text(session.label, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text("${session.host}:${session.port}"),
                     trailing: Row(
@@ -373,10 +419,13 @@ class DashboardScreen extends StatelessWidget {
                       children: [
                         TextButton(
                           onPressed: () => session.isConnected ? manager.disconnect(session) : manager.connect(session),
-                          child: Text(session.isConnected ? "DISCONNECT" : "CONNECT", style: TextStyle(color: session.isConnected ? Colors.red : const Color(0xFFE8A020))),
+                          child: Text(
+                            session.isConnected ? "DISCONNECT" : "CONNECT", 
+                            style: TextStyle(color: session.isConnected ? Colors.redAccent : const Color(0xFF00FF41))
+                          ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.settings),
+                          icon: const Icon(Icons.terminal, color: Color(0xFF00FF41)),
                           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SessionOpsScreen(session: session))),
                         ),
                       ],
@@ -386,10 +435,9 @@ class DashboardScreen extends StatelessWidget {
               },
             ),
           ),
-          const Divider(height: 1, color: Color(0xFF1E2824)),
           Expanded(
             flex: 1,
-            child: LogViewerWidget(title: "GLOBAL LOG", logs: manager.globalLogs, isGlobal: true),
+            child: LogViewerWidget(title: "GLOBAL_STREAM", logs: manager.globalLogs, isGlobal: true),
           )
         ],
       ),
@@ -401,34 +449,121 @@ class SessionOpsScreen extends StatelessWidget {
   final ModbusSession session;
   const SessionOpsScreen({super.key, required this.session}); 
 
+  Future<void> _showWriteEntryDialog(BuildContext context, SessionManager manager, {WriteEntry? existingEntry}) async {
+    final TextEditingController labelController = TextEditingController(text: existingEntry?.label ?? "Var_X");
+    final TextEditingController addressController = TextEditingController(text: existingEntry?.address.toString() ?? "0");
+    final TextEditingController valueController = TextEditingController(text: existingEntry?.values.join(',') ?? "0");
+    String selectedType = existingEntry?.writeType ?? "Holding Register";
+
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: Colors.black,
+              shape: const RoundedRectangleBorder(
+                side: BorderSide(color: Color(0xFF00FF41), width: 2),
+                borderRadius: BorderRadius.zero,
+              ),
+              title: Text(existingEntry == null ? 'ADD WRITE ENTRY' : 'EDIT WRITE ENTRY', style: const TextStyle(color: Color(0xFF00FF41), fontFamily: 'monospace')),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(controller: labelController, decoration: const InputDecoration(labelText: 'Label'), style: const TextStyle(color: Color(0xFF00FF41))),
+                    const SizedBox(height: 8),
+                    TextField(controller: addressController, decoration: const InputDecoration(labelText: 'Address'), keyboardType: TextInputType.number, style: const TextStyle(color: Color(0xFF00FF41))),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      dropdownColor: Colors.black,
+                      value: selectedType,
+                      style: const TextStyle(color: Color(0xFF00FF41), fontFamily: 'monospace'),
+                      decoration: const InputDecoration(labelText: 'Type'),
+                      items: ["Holding Register", "Coil"].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                      onChanged: (val) {
+                        if (val != null) setState(() => selectedType = val);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(controller: valueController, decoration: const InputDecoration(labelText: 'Value(s) (comma separated)'), style: const TextStyle(color: Color(0xFF00FF41))),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('ABORT', style: TextStyle(color: Color(0xFF008F11))),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    int address = int.tryParse(addressController.text) ?? 0;
+                    List<int> values = valueController.text.split(',').map((e) => int.tryParse(e.trim()) ?? 0).toList();
+                    if (values.isEmpty) values = [0];
+
+                    if (existingEntry != null) {
+                      manager.removeWriteEntry(session, existingEntry);
+                    }
+                    manager.addWriteEntry(session, WriteEntry(
+                      label: labelController.text,
+                      address: address,
+                      writeType: selectedType,
+                      values: values,
+                    ));
+                    Navigator.pop(context);
+                  },
+                  child: const Text('SAVE'),
+                ),
+              ],
+            );
+          }
+        );
+      }
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Add the watcher here so the persistent Log updates when state changes
+    final manager = context.watch<SessionManager>();
+
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(session.label),
+          title: Text("> ${session.label}"),
           bottom: const TabBar(
-            indicatorColor: Color(0xFFE8A020),
-            labelColor: Color(0xFFE8A020),
+            indicatorColor: Color(0xFF00FF41),
+            labelColor: Color(0xFF00FF41),
+            unselectedLabelColor: Color(0xFF008F11),
             tabs: [Tab(text: "READ"), Tab(text: "WRITE"), Tab(text: "POLL")],
           ),
         ),
-        body: TabBarView(
+        body: Column(
           children: [
-            _buildReadTab(context),
-            _buildWriteTab(context),
-            _buildPollTab(context),
+            // The active tab takes up the remaining upper space
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _buildReadTab(context, manager),
+                  _buildWriteTab(context, manager),
+                  _buildPollTab(context, manager),
+                ],
+              ),
+            ),
+            // The Session Log is permanently pinned to the bottom
+            SizedBox(
+              height: 150, 
+              child: LogViewerWidget(title: "SESSION_LOG", logs: session.logs)
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildReadTab(BuildContext context) {
-    final manager = context.watch<SessionManager>();
+  Widget _buildReadTab(BuildContext context, SessionManager manager) {
     int tempAddr = 0; int tempCount = 10;
-    
     return Column(
       children: [
         Padding(
@@ -438,66 +573,79 @@ class SessionOpsScreen extends StatelessWidget {
               Expanded(child: TextField(decoration: const InputDecoration(labelText: "Address"), keyboardType: TextInputType.number, onChanged: (v) => tempAddr = int.tryParse(v) ?? 0)),
               const SizedBox(width: 8),
               Expanded(child: TextField(decoration: const InputDecoration(labelText: "Count"), keyboardType: TextInputType.number, onChanged: (v) => tempCount = int.tryParse(v) ?? 1)),
-              IconButton(icon: const Icon(Icons.download), onPressed: () => manager.executeRead(session, tempAddr, tempCount, session.defaultUnitId, "Holding Registers")),
+              IconButton(icon: const Icon(Icons.download, color: Color(0xFF00FF41)), onPressed: () => manager.executeRead(session, tempAddr, tempCount, session.defaultUnitId, "Holding Registers")),
             ],
           ),
         ),
         Expanded(child: ReadResultsTable(results: session.lastReadResults)),
-        SizedBox(height: 150, child: LogViewerWidget(title: "SESSION LOG", logs: session.logs)),
       ],
     );
   }
 
-  Widget _buildWriteTab(BuildContext context) {
-    final manager = context.watch<SessionManager>();
+  Widget _buildWriteTab(BuildContext context, SessionManager manager) {
     return SingleChildScrollView(
       child: Column(
         children: [
           ListTile(
-            title: const Text("Multi-Address Write"),
+            title: const Text("MULTI-ADDRESS WRITE"),
             trailing: ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF500000), foregroundColor: Colors.redAccent, side: const BorderSide(color: Colors.redAccent)),
               onPressed: () => manager.executeMultiWrite(session, session.defaultUnitId), 
-              child: const Text("WRITE ALL")
+              child: const Text("EXECUTE_ALL")
             ),
           ),
           ...session.writeEntries.map((e) => ListTile(
             title: Text("${e.writeType} @ ${e.address}"),
-            subtitle: Text("Values: ${e.values}"),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red), 
-              onPressed: () => manager.removeWriteEntry(session, e)
+            subtitle: Text("Values: ${e.values.join(', ')}"),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Color(0xFF00FF41)), 
+                  onPressed: () => _showWriteEntryDialog(context, manager, existingEntry: e)
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.redAccent), 
+                  onPressed: () => manager.removeWriteEntry(session, e)
+                ),
+              ],
             ),
           )),
           TextButton(
-            onPressed: () => manager.addWriteEntry(session, WriteEntry(label: "Test", address: 0, writeType: "Holding Register", values: [99])), 
-            child: const Text("+ ADD DUMMY ENTRY")
+            onPressed: () => _showWriteEntryDialog(context, manager), 
+            child: const Text("+ ADD WRITE ENTRY")
           ),
-          const Divider(),
+          const Divider(color: Color(0xFF008F11)),
           const FormatConverterWidget(),
         ],
       ),
     );
   }
 
-  Widget _buildPollTab(BuildContext context) {
-    final manager = context.watch<SessionManager>();
+  Widget _buildPollTab(BuildContext context, SessionManager manager) {
     return ListView(
       padding: const EdgeInsets.all(8),
       children: [
-        ListTile(
-          title: const Text("Continuous Read"),
-          subtitle: Text("Every ${session.readInterval}s"),
-          trailing: ElevatedButton(
-            onPressed: () => manager.toggleReadPolling(session, 0, 10, session.defaultUnitId, "Holding Registers"),
-            child: Text(session.isReadPolling ? "STOP" : "START"),
+        Card(
+          child: ListTile(
+            title: const Text("AUTO_READ_LOOP"),
+            subtitle: Text("Interval: ${session.readInterval}s"),
+            trailing: ElevatedButton(
+              style: session.isReadPolling ? ElevatedButton.styleFrom(backgroundColor: const Color(0xFF500000), foregroundColor: Colors.redAccent, side: const BorderSide(color: Colors.redAccent)) : null,
+              onPressed: () => manager.toggleReadPolling(session, 0, 10, session.defaultUnitId, "Holding Registers"),
+              child: Text(session.isReadPolling ? "HALT" : "INITIATE"),
+            ),
           ),
         ),
-        ListTile(
-          title: const Text("Continuous Write All"),
-          subtitle: Text("Every ${session.multiWriteInterval}s"),
-          trailing: ElevatedButton(
-            onPressed: () => manager.toggleMultiWritePolling(session, session.defaultUnitId),
-            child: Text(session.isMultiWritePolling ? "STOP" : "START"),
+        Card(
+          child: ListTile(
+            title: const Text("AUTO_WRITE_LOOP"),
+            subtitle: Text("Interval: ${session.multiWriteInterval}s"),
+            trailing: ElevatedButton(
+              style: session.isMultiWritePolling ? ElevatedButton.styleFrom(backgroundColor: const Color(0xFF500000), foregroundColor: Colors.redAccent, side: const BorderSide(color: Colors.redAccent)) : null,
+              onPressed: () => manager.toggleMultiWritePolling(session, session.defaultUnitId),
+              child: Text(session.isMultiWritePolling ? "HALT" : "INITIATE"),
+            ),
           ),
         ),
       ],
@@ -513,11 +661,12 @@ class ReadResultsTable extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    if (results.isEmpty) return const Center(child: Text("No data"));
+    if (results.isEmpty) return const Center(child: Text("NO_DATA_FOUND", style: TextStyle(color: Color(0xFF008F11))));
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
-        columns: const [DataColumn(label: Text('Address')), DataColumn(label: Text('Dec')), DataColumn(label: Text('Hex')), DataColumn(label: Text('Bin'))],
+        headingRowColor: WidgetStateProperty.all(const Color(0xFF002200)),
+        columns: const [DataColumn(label: Text('ADDR')), DataColumn(label: Text('DEC')), DataColumn(label: Text('HEX')), DataColumn(label: Text('BIN'))],
         rows: results.map((r) => DataRow(cells: [
           DataCell(Text(r.address.toString())),
           DataCell(Text(r.value.toString())),
@@ -542,7 +691,7 @@ class _FormatConverterWidgetState extends State<FormatConverterWidget> {
   
   void _doFmt(String fmt) {
     int? val = int.tryParse(_inputController.text);
-    if (val == null) { setState(() { _result = "Invalid input"; }); return; }
+    if (val == null) { setState(() { _result = "ERR: INVALID_INPUT"; }); return; }
     setState(() {
       if (fmt == "hex") _result = "0x${val.toRadixString(16).padLeft(4, '0')}";
       if (fmt == "dec") _result = "$val";
@@ -556,15 +705,25 @@ class _FormatConverterWidgetState extends State<FormatConverterWidget> {
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(controller: _inputController, decoration: const InputDecoration(labelText: "Format Converter Value")),
-            Text(_result, style: const TextStyle(fontFamily: 'monospace', fontSize: 16)),
+            const Text("DATA_FORMAT_UTILITY", style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            TextField(controller: _inputController, decoration: const InputDecoration(labelText: "INPUT_VALUE")),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              color: const Color(0xFF002200),
+              child: Text("> $_result", style: const TextStyle(fontSize: 16)),
+            ),
+            const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                ElevatedButton(onPressed: () => _doFmt("hex"), child: const Text("Hex")),
-                ElevatedButton(onPressed: () => _doFmt("dec"), child: const Text("Dec")),
-                ElevatedButton(onPressed: () => _doFmt("bin"), child: const Text("Bin")),
+                ElevatedButton(onPressed: () => _doFmt("hex"), child: const Text("TO_HEX")),
+                ElevatedButton(onPressed: () => _doFmt("dec"), child: const Text("TO_DEC")),
+                ElevatedButton(onPressed: () => _doFmt("bin"), child: const Text("TO_BIN")),
               ],
             )
           ],
@@ -581,29 +740,32 @@ class LogViewerWidget extends StatelessWidget {
   const LogViewerWidget({super.key, required this.title, required this.logs, this.isGlobal = false}); 
 
   Color _getColor(String tag) {
-    if (tag == 'ok') return const Color(0xFF3DDC84);
-    if (tag == 'error') return const Color(0xFFFF5555);
-    if (tag == 'warn') return const Color(0xFFF0C040);
-    return const Color(0xFFCDD5D0);
+    if (tag == 'ok') return const Color(0xFF00FF41);
+    if (tag == 'error') return Colors.redAccent;
+    if (tag == 'warn') return Colors.yellowAccent;
+    return const Color(0xFF008F11); // Info/Data
   }
 
   @override Widget build(BuildContext context) {
     return Card(
-      color: const Color(0xFF191E1C),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(padding: const EdgeInsets.all(8), child: Text(title, style: const TextStyle(color: Color(0xFFE8A020)))),
+          Container(
+            color: const Color(0xFF002200),
+            padding: const EdgeInsets.all(8), 
+            child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold))
+          ),
           Expanded(
             child: ListView.builder(
-              reverse: true, // Auto-scroll to bottom behavior
+              reverse: true,
               itemCount: logs.length,
               itemBuilder: (context, i) {
                 final log = logs[logs.length - 1 - i];
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
                   child: Text("[${log.timeString}] ${isGlobal && log.source != null ? '[${log.source}] ' : ''}${log.message}", 
-                    style: TextStyle(color: _getColor(log.tag), fontSize: 11, fontFamily: 'monospace')),
+                    style: TextStyle(color: _getColor(log.tag), fontSize: 11)),
                 );
               },
             ),
